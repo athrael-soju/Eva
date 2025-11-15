@@ -6,6 +6,7 @@ import { OpenAIRealtimeWebRTC } from '@openai/agents/realtime';
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
+  const [isAgentConnected, setIsAgentConnected] = useState(false);
 
   const clientRef = useRef<OpenAIRealtimeWebRTC | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -69,6 +70,9 @@ export default function Home() {
       });
       console.log('Connected successfully');
 
+      // Update state to indicate agent is connected
+      setIsAgentConnected(true);
+
       // Send initial greeting
       client.sendMessage('Hello!', {});
     } catch (err) {
@@ -85,6 +89,7 @@ export default function Home() {
       {mounted && (
         <LoadingAnimation
           onAnimationComplete={handleAnimationClick}
+          isAgentConnected={isAgentConnected}
         />
       )}
     </div>

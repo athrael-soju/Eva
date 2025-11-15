@@ -34,14 +34,21 @@ class CustomCurve extends THREE.Curve<THREE.Vector3> {
 
 interface LoadingAnimationProps {
   onAnimationComplete?: () => void;
+  isAgentConnected?: boolean;
 }
 
-export default function LoadingAnimation({ onAnimationComplete }: LoadingAnimationProps) {
+export default function LoadingAnimation({ onAnimationComplete, isAgentConnected }: LoadingAnimationProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const completedRef = useRef(false);
   const completionCallbackFiredRef = useRef(false);
   const animationStartedRef = useRef(false);
+  const isAgentConnectedRef = useRef(false);
+
+  // Update ref when isAgentConnected changes
+  useEffect(() => {
+    isAgentConnectedRef.current = isAgentConnected || false;
+  }, [isAgentConnected]);
 
   useEffect(() => {
     // Capture ref value to fix React hooks warning
@@ -134,6 +141,12 @@ export default function LoadingAnimation({ onAnimationComplete }: LoadingAnimati
     const handleCanvasClick = () => {
       if (!animationStartedRef.current) {
         animationStartedRef.current = true;
+
+        // Fire the callback when animation starts
+        if (!completionCallbackFiredRef.current && onAnimationComplete) {
+          completionCallbackFiredRef.current = true;
+          onAnimationComplete();
+        }
       }
     };
 
@@ -152,18 +165,16 @@ export default function LoadingAnimation({ onAnimationComplete }: LoadingAnimati
 
       // Only advance animation if started
       if (animationStartedRef.current) {
-        animatestep = Math.max(0, Math.min(240, animatestep + 1));
+        // Pause at halfway (120 steps) until agent is connected
+        const maxStep = isAgentConnectedRef.current ? 240 : 120;
+        // Slower speed while waiting for agent, normal speed after connected
+        const speed = isAgentConnectedRef.current ? 1 : 0.25;
+        animatestep = Math.max(0, Math.min(maxStep, animatestep + speed));
       }
 
       // Mark as completed when animation reaches the end
       if (animatestep >= 240) {
         completedRef.current = true;
-
-        // Auto-fire completion callback once
-        if (!completionCallbackFiredRef.current && onAnimationComplete) {
-          completionCallbackFiredRef.current = true;
-          onAnimationComplete();
-        }
       }
 
       acceleration = easing(animatestep, 0, 1, 240);
