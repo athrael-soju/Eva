@@ -40,6 +40,7 @@ export default function LoadingAnimation({ autoplay = false }: LoadingAnimationP
   const wrapRef = useRef<HTMLDivElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
   const toendRef = useRef(autoplay);
+  const completedRef = useRef(false);
 
   useEffect(() => {
     // Capture ref value to fix React hooks warning
@@ -133,7 +134,10 @@ export default function LoadingAnimation({ autoplay = false }: LoadingAnimationP
     };
 
     const back = () => {
-      toendRef.current = false;
+      // Only allow reversing if animation hasn't completed
+      if (!completedRef.current) {
+        toendRef.current = false;
+      }
     };
 
     // Easing function
@@ -150,6 +154,12 @@ export default function LoadingAnimation({ autoplay = false }: LoadingAnimationP
         0,
         Math.min(240, toendRef.current ? animatestep + 1 : animatestep - 4)
       );
+
+      // Mark as completed when animation reaches the end
+      if (animatestep >= 240) {
+        completedRef.current = true;
+      }
+
       acceleration = easing(animatestep, 0, 1, 240);
 
       if (acceleration > 0.35) {
@@ -219,9 +229,6 @@ export default function LoadingAnimation({ autoplay = false }: LoadingAnimationP
         ref={wrapRef}
         className="absolute left-0 right-0 top-0 bottom-0 overflow-hidden"
       />
-      <p className="absolute left-0 right-0 bottom-0 text-xs text-[#ccc] leading-8 text-center">
-        * {autoplay ? 'Animation playing automatically. ' : ''}Mouse or Finger press on the page to {autoplay ? 'control' : 'finish'} loading action.
-      </p>
     </div>
   );
 }
