@@ -32,10 +32,9 @@ export class MultiAgentOrchestrator {
   constructor(config: Partial<MultiAgentConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
 
-    // Initialize text-based agents (they retrieve API key from environment)
+    // Initialize text-based agents (they retrieve API key and model from environment)
     this.routerAgent = new RouterAgent();
     this.toolExecutorAgent = new ToolExecutorAgent(
-      'gpt-4o-mini',
       this.config.maxToolExecutionTime,
       this.config.enableParallelToolExecution
     );

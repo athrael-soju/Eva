@@ -31,7 +31,6 @@ export class ToolExecutorAgent {
   private enableParallel: boolean;
 
   constructor(
-    model: string = 'gpt-4o-mini',
     maxExecutionTime: number = 30000,
     enableParallel: boolean = true
   ) {
@@ -40,7 +39,7 @@ export class ToolExecutorAgent {
       throw new Error('OPENAI_API_KEY environment variable is not set');
     }
     this.client = new OpenAI({ apiKey });
-    this.model = model;
+    this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
     this.toolRegistry = new Map();
     this.maxExecutionTime = maxExecutionTime;
     this.enableParallel = enableParallel;

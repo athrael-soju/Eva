@@ -33,13 +33,13 @@ export class ContextBuilderAgent {
   private client: OpenAI;
   private model: string;
 
-  constructor(model: string = 'gpt-4o-mini') {
+  constructor() {
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       throw new Error('OPENAI_API_KEY environment variable is not set');
     }
     this.client = new OpenAI({ apiKey });
-    this.model = model;
+    this.model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
   }
 
   async buildContext(
