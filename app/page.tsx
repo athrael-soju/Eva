@@ -243,6 +243,46 @@ export default function Home() {
 
       sessionRef.current = session;
 
+      // Set up automatic conversation saving
+      let lastUserMessage = '';
+      let lastAssistantMessage = '';
+
+      // Track when agent responds to save the conversation turn
+      session.on('agent_end', async (_context, _agent, output) => {
+        lastAssistantMessage = output;
+
+        // If we have both user message and assistant response, save the turn
+        if (lastUserMessage && lastAssistantMessage) {
+          try {
+            // Import the ExecutorHelper dynamically to avoid circular dependencies
+            const { ExecutorHelper } = await import('./lib/agents/executor');
+            await ExecutorHelper.saveConversationTurn(lastUserMessage, lastAssistantMessage);
+            console.log('Conversation turn auto-saved to memory');
+          } catch (error) {
+            console.error('Failed to auto-save conversation:', error);
+          }
+
+          // Reset for next turn
+          lastUserMessage = '';
+          lastAssistantMessage = '';
+        }
+      });
+
+      // Track user messages from the history
+      session.on('history_added', (item) => {
+        if (item.type === 'message' && item.role === 'user' && item.status === 'completed') {
+          // Extract text from user message (could be audio transcript or text)
+          const textContent = item.content.find((c: any) => c.type === 'input_text' || c.type === 'input_audio');
+          if (textContent) {
+            if (textContent.type === 'input_text') {
+              lastUserMessage = textContent.text;
+            } else if (textContent.type === 'input_audio' && textContent.transcript) {
+              lastUserMessage = textContent.transcript;
+            }
+          }
+        }
+      });
+
       // Connect to the realtime API
       console.log('Connecting to realtime API...');
       await session.connect({

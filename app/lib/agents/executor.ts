@@ -53,11 +53,18 @@ export class ExecutorHelper {
                 // Check if no nodes were found
                 if (structuredResult.nodes && Array.isArray(structuredResult.nodes)) {
                     if (structuredResult.nodes.length === 0) {
-                        return "No previous information found about the user. This appears to be a first meeting.";
+                        return "No previous information found. This appears to be your first meeting.";
                     }
 
-                    // Format nodes nicely
-                    return `Found ${structuredResult.nodes.length} memory item(s):\n${JSON.stringify(structuredResult.nodes, null, 2)}`;
+                    // Format nodes in a natural, narrative way
+                    const nodeDescriptions = structuredResult.nodes.map((node: any) => {
+                        const parts = [];
+                        if (node.name) parts.push(`Name: ${node.name}`);
+                        if (node.summary) parts.push(`Details: ${node.summary}`);
+                        return parts.join('. ');
+                    }).filter((desc: string) => desc.length > 0);
+
+                    return nodeDescriptions.join('\n');
                 }
             }
 
@@ -70,16 +77,27 @@ export class ExecutorHelper {
                     if (textContent && textContent.text) {
                         try {
                             const parsed = JSON.parse(textContent.text);
-                            if (parsed.nodes && Array.isArray(parsed.nodes) && parsed.nodes.length === 0) {
-                                return "No previous information found about the user. This appears to be a first meeting.";
+                            if (parsed.nodes && Array.isArray(parsed.nodes)) {
+                                if (parsed.nodes.length === 0) {
+                                    return "No previous information found. This appears to be your first meeting.";
+                                }
+                                // Format parsed nodes naturally
+                                const nodeDescriptions = parsed.nodes.map((node: any) => {
+                                    const parts = [];
+                                    if (node.name) parts.push(`Name: ${node.name}`);
+                                    if (node.summary) parts.push(`Details: ${node.summary}`);
+                                    return parts.join('. ');
+                                }).filter((desc: string) => desc.length > 0);
+                                return nodeDescriptions.join('\n');
                             }
                         } catch (e) {
-                            // If parsing fails, return as is
+                            // If parsing fails, return the text content as is
+                            return textContent.text;
                         }
                     }
-                    return `Found information:\n${JSON.stringify(content, null, 2)}`;
+                    return content.map((item: any) => item.text || '').filter((t: string) => t).join('\n');
                 } else if (Array.isArray(content)) {
-                    return "No previous information found about the user. This appears to be a first meeting.";
+                    return "No previous information found. This appears to be your first meeting.";
                 }
             }
 
@@ -98,6 +116,21 @@ export class ExecutorHelper {
         } catch (error) {
             console.error('Failed to save memory:', error);
             return 'Error saving memory.';
+        }
+    }
+
+    /**
+     * Automatically save a conversation turn (user + agent exchange) to memory
+     * This runs in the background and doesn't block the conversation
+     */
+    static async saveConversationTurn(userMessage: string, agentResponse: string): Promise<void> {
+        try {
+            const conversationContent = `User: ${userMessage}\nEva: ${agentResponse}`;
+            console.log('ExecutorHelper: Auto-saving conversation turn');
+            await this.callStorageAPI('save_memory', conversationContent);
+        } catch (error) {
+            console.error('Failed to auto-save conversation turn:', error);
+            // Don't throw - we don't want to interrupt the conversation if auto-save fails
         }
     }
 
