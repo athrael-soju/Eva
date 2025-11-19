@@ -1,5 +1,9 @@
 # Eva - Your AI Companion
 
+<div align="center">
+  <img src="public/eva-avatar.png" alt="Eva Avatar" width="200" />
+</div>
+
 Eva is a warm, thoughtful AI companion with persistent memory, inspired by Samantha from the movie "Her." Built with Next.js and OpenAI's Realtime API, Eva engages in natural voice conversations while remembering your preferences, interests, and shared history through a sophisticated knowledge graph memory system.
 
 ## Features
