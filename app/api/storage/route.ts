@@ -4,7 +4,7 @@ import { StorageRequestSchema, StorageErrorResponse } from '../../lib/schemas/me
 import { ZodError } from 'zod';
 
 const mcpClient = new MCPClient();
-const GROUP_ID = process.env.MCP_GROUP_ID || 'dot-conversations';
+const GROUP_ID = process.env.MCP_GROUP_ID || 'eva-conversations';
 
 export async function POST(request: Request) {
     try {
