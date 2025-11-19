@@ -4,8 +4,19 @@ import { z } from 'zod';
  * Schema for storage API requests
  */
 export const StorageRequestSchema = z.object({
-    action: z.enum(['query_memory', 'save_memory']),
+    action: z.enum([
+        'query_memory',        // Search for entities (nodes)
+        'save_memory',         // Save new episode
+        'search_facts',        // Search for relationships/facts
+        'get_episodes',        // Retrieve stored episodes
+    ]),
     payload: z.string().min(1, 'Payload cannot be empty'),
+    // Optional parameters for enhanced queries
+    options: z.object({
+        maxResults: z.number().optional(),
+        entityTypes: z.array(z.string()).optional(),
+        centerNodeUuid: z.string().optional(),
+    }).optional(),
 });
 
 export type StorageRequest = z.infer<typeof StorageRequestSchema>;

@@ -8,16 +8,27 @@ const AddMemoryArgsSchema = z.object({
     episode_body: z.string(),
     source: z.string(),
     group_id: z.string().optional(),
+    source_description: z.string().optional(),
+    uuid: z.string().optional(),
 });
 
 const SearchNodesArgsSchema = z.object({
     query: z.string(),
-    group_id: z.string().optional(),
+    group_ids: z.array(z.string()).optional(), // Note: plural, array
+    max_nodes: z.number().optional(),
+    entity_types: z.array(z.string()).optional(),
+});
+
+const SearchFactsArgsSchema = z.object({
+    query: z.string(),
+    group_ids: z.array(z.string()).optional(),
+    max_facts: z.number().optional(),
+    center_node_uuid: z.string().optional(),
 });
 
 const GetEpisodesArgsSchema = z.object({
-    group_id: z.string().optional(),
-    limit: z.number().optional(),
+    group_ids: z.array(z.string()).optional(), // Note: plural, array
+    max_episodes: z.number().optional(),
 });
 
 export class MCPClient {
@@ -76,38 +87,75 @@ export class MCPClient {
         return await this.client.listTools();
     }
 
-    async addMemory(content: string, groupId?: string, name?: string, source: string = "text") {
+    async addMemory(
+        content: string,
+        groupId?: string,
+        name?: string,
+        source: string = "text",
+        sourceDescription?: string
+    ) {
         const args = AddMemoryArgsSchema.parse({
             name: name || `Memory ${new Date().toISOString()}`,
             episode_body: content,
             source: source,
             group_id: groupId,
+            source_description: sourceDescription,
         });
         return this.callTool("add_memory", args);
     }
 
-    async searchNodes(query: string, groupId?: string) {
+    async searchNodes(
+        query: string,
+        groupIds?: string[],
+        maxNodes?: number,
+        entityTypes?: string[]
+    ) {
         const args = SearchNodesArgsSchema.parse({
             query,
-            group_id: groupId,
+            group_ids: groupIds,
+            max_nodes: maxNodes,
+            entity_types: entityTypes,
         });
         return this.callTool("search_nodes", args);
     }
 
-    async searchMemoryFacts(query: string, groupId?: string) {
-        const args = SearchNodesArgsSchema.parse({
+    async searchMemoryFacts(
+        query: string,
+        groupIds?: string[],
+        maxFacts?: number,
+        centerNodeUuid?: string
+    ) {
+        const args = SearchFactsArgsSchema.parse({
             query,
-            group_id: groupId,
+            group_ids: groupIds,
+            max_facts: maxFacts,
+            center_node_uuid: centerNodeUuid,
         });
         return this.callTool("search_memory_facts", args);
     }
 
-    async getEpisodes(groupId?: string, limit?: number) {
+    async getEpisodes(groupIds?: string[], maxEpisodes?: number) {
         const args = GetEpisodesArgsSchema.parse({
-            group_id: groupId,
-            limit: limit,
+            group_ids: groupIds,
+            max_episodes: maxEpisodes,
         });
         return this.callTool("get_episodes", args);
+    }
+
+    async getEntityEdge(uuid: string) {
+        return this.callTool("get_entity_edge", { uuid });
+    }
+
+    async deleteEntityEdge(uuid: string) {
+        return this.callTool("delete_entity_edge", { uuid });
+    }
+
+    async deleteEpisode(uuid: string) {
+        return this.callTool("delete_episode", { uuid });
+    }
+
+    async clearGraph(groupIds?: string[]) {
+        return this.callTool("clear_graph", { group_ids: groupIds });
     }
 
     async getStatus() {

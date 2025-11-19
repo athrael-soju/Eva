@@ -101,6 +101,48 @@ export class ExecutorHelper {
         }
     }
 
+    static async searchFacts(query: string, centerNodeUuid?: string): Promise<string> {
+        console.log('ExecutorHelper: Searching facts for:', query, centerNodeUuid ? `(centered on ${centerNodeUuid})` : '');
+        try {
+            const requestBody = {
+                action: 'search_facts' as const,
+                payload: query,
+                options: centerNodeUuid ? { centerNodeUuid } : undefined,
+            };
+
+            const response = await fetch('/api/storage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errorResponse = StorageErrorResponseSchema.safeParse(data);
+                if (errorResponse.success) {
+                    throw new Error(`Storage API error: ${errorResponse.data.error}. ${errorResponse.data.details || ''}`);
+                }
+                throw new Error(`Storage API error: ${response.statusText}`);
+            }
+
+            const validatedResponse = StorageResponseSchema.safeParse(data);
+            if (validatedResponse.success) {
+                const result = validatedResponse.data.result;
+                console.log('ExecutorHelper: Facts result:', JSON.stringify(result, null, 2));
+                return JSON.stringify(result, null, 2);
+            }
+
+            console.warn('Storage API response does not match expected schema:', data);
+            return JSON.stringify(data.result, null, 2);
+        } catch (error) {
+            console.error('Failed to search facts:', error);
+            return "Error searching facts.";
+        }
+    }
+
 }
 
 export const queryMemoryTool = {
@@ -146,6 +188,34 @@ export const saveMemoryTool = {
     invoke: async (context: any, input: string) => {
         const args = JSON.parse(input);
         const result = await ExecutorHelper.saveMemory(args.content);
+        return { success: true, result: result };
+    },
+    needsApproval: async () => false,
+};
+
+export const searchFactsTool = {
+    type: 'function' as const,
+    name: 'search_facts',
+    description: 'Search for RELATIONSHIPS and CONNECTIONS between entities in memory. Use this to understand how things relate to each other (e.g., "What are the user\'s relationships?", "Find connections between their interests", "What facts are related to their work?"). This searches the graph for facts/edges, not just entities.',
+    parameters: {
+        type: 'object' as const,
+        properties: {
+            query: {
+                type: 'string',
+                description: 'The relationship or connection to search for (e.g., "user work relationships", "interests connected to hobbies").',
+            },
+            centerNodeUuid: {
+                type: 'string',
+                description: 'Optional: UUID of an entity to center the search around. Results will be prioritized by proximity to this entity.',
+            },
+        },
+        required: ['query'],
+        additionalProperties: false,
+    },
+    strict: false,
+    invoke: async (context: any, input: string) => {
+        const args = JSON.parse(input);
+        const result = await ExecutorHelper.searchFacts(args.query, args.centerNodeUuid);
         return { success: true, result: result };
     },
     needsApproval: async () => false,

@@ -42,3 +42,6 @@ next-env.d.ts
 
 # graphiti/mcp data
 mcp_server/
+
+# agent files
+.claude
