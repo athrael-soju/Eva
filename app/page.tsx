@@ -8,6 +8,8 @@ import { createConversationalAgent } from './lib/agent';
 export default function Home() {
   const [isAgentConnected, setIsAgentConnected] = useState(false);
   const [shouldReset, setShouldReset] = useState(false);
+  const [isAgentSpeaking, setIsAgentSpeaking] = useState(false);
+  const audioFrequencyDataRef = useRef<Uint8Array | null>(null);
 
   const sessionRef = useRef<RealtimeSession | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
@@ -43,6 +45,7 @@ export default function Home() {
 
     // Reset all state
     setIsAgentConnected(false);
+    setIsAgentSpeaking(false);
     hasConnectedRef.current = false;
     setShouldReset(true);
 
@@ -77,6 +80,48 @@ export default function Home() {
       const audioElement = new Audio();
       audioElement.autoplay = true;
       audioElementRef.current = audioElement;
+
+      // Setup audio analysis for detecting when agent is speaking
+      const setupAudioAnalysis = (stream: MediaStream) => {
+        try {
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+          const audioContext = new AudioContextClass();
+          const analyser = audioContext.createAnalyser();
+          analyser.fftSize = 512; // Increased for better frequency resolution
+          analyser.smoothingTimeConstant = 0.8;
+
+          const source = audioContext.createMediaStreamSource(stream);
+          source.connect(analyser);
+
+          const bufferLength = analyser.frequencyBinCount;
+          const dataArray = new Uint8Array(bufferLength);
+          audioFrequencyDataRef.current = dataArray;
+
+          const SPEECH_THRESHOLD = 20; // Threshold to detect speech
+
+          const checkAudio = () => {
+            if (!audioElementRef.current) return;
+
+            analyser.getByteFrequencyData(dataArray);
+
+            // Calculate average volume
+            let sum = 0;
+            for (let i = 0; i < bufferLength; i++) {
+              sum += dataArray[i];
+            }
+            const average = sum / bufferLength;
+
+            // Update speaking state based on audio level
+            setIsAgentSpeaking(average > SPEECH_THRESHOLD);
+
+            requestAnimationFrame(checkAudio);
+          };
+
+          checkAudio();
+        } catch (e) {
+          console.error('Error setting up audio analysis:', e);
+        }
+      };
 
       // Function to wait for audio playback to finish using silence detection
       const waitForAudioPlayback = async () => {
@@ -206,6 +251,11 @@ export default function Home() {
       });
       console.log('Connected successfully');
 
+      // Setup audio analysis once connected
+      if (audioElement.srcObject) {
+        setupAudioAnalysis(audioElement.srcObject as MediaStream);
+      }
+
       // Update state to indicate agent is connected
       setIsAgentConnected(true);
 
@@ -225,6 +275,8 @@ export default function Home() {
       <LoadingAnimation
         onAnimationComplete={handleAnimationClick}
         isAgentConnected={isAgentConnected}
+        isAgentSpeaking={isAgentSpeaking}
+        audioFrequencyData={audioFrequencyDataRef.current}
         shouldReset={shouldReset}
       />
     </div>

@@ -48,12 +48,14 @@ cd eva
 npm install
 ```
 
-3. Create a `.env.local` file in the root directory:
+3. Copy `.env.example` to `.env.local` and fill in your values:
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_REALTIME_MODEL=gpt-4o-realtime-preview-2024-12-17
 NEXT_PUBLIC_MCP_SERVER_URL=http://localhost:8000/mcp
+MCP_GROUP_ID=eva-conversations
 ```
+> Use a unique `MCP_GROUP_ID` if you want to isolate memories per user, tenant, or environment.
 
 4. Start the Graphiti knowledge graph service:
 ```bash
@@ -149,23 +151,33 @@ sequenceDiagram
 
 ```
 eva/
-├── app/
-│   ├── api/
-│   │   ├── session/       # Session token generation
-│   │   └── storage/       # Memory storage API
-│   ├── components/
-│   │   └── LoadingAnimation.tsx  # 3D interactive animation
-│   ├── lib/
-│   │   ├── agents/
-│   │   │   ├── chat.ts    # Eva's personality and configuration
-│   │   │   └── executor.ts # Memory tools (query, save, search)
-│   │   ├── mcp/           # Model Context Protocol client
-│   │   └── schemas/       # Memory data schemas
-│   ├── layout.tsx         # Root layout and metadata
-│   └── page.tsx           # Main application page
-├── public/
-│   └── eva-icon.png       # Application icon
-└── package.json
+|-- app/
+|   |-- api/
+|   |   |-- session/       # Session token generation
+|   |   `-- storage/       # Memory storage API
+|   |-- components/
+|   |   `-- LoadingAnimation.tsx  # 3D interactive animation
+|   |-- hooks/
+|   |   `-- useLoadingAnimation.ts
+|   |-- lib/
+|   |   |-- agents/
+|   |   |   |-- chat.ts            # Eva's personality and configuration
+|   |   |   `-- executor.ts        # Memory tools (query, save, search)
+|   |   |-- mcp/
+|   |   |   `-- client.ts          # Model Context Protocol client
+|   |   `-- schemas/
+|   |       `-- memory.ts          # Memory data schemas
+|   |-- layout.tsx                 # Root layout and metadata
+|   `-- page.tsx                   # Main application page
+|-- components/
+|-- data/
+|-- lib/
+|-- mcp_server/
+|-- public/
+|   `-- eva-icon.png               # Application icon
+|-- docker-compose.yml
+|-- package.json
+`-- README.md
 ```
 
 ## Memory System
@@ -176,11 +188,11 @@ Eva's memory is powered by **Graphiti**, a temporal knowledge graph built on **F
 
 ```
 Eva (OpenAI Realtime)
-    ↓ (voice/text)
+    â†“ (voice/text)
 Next.js Frontend
-    ↓ (MCP)
+    â†“ (MCP)
 Graphiti Knowledge Graph Server
-    ↓ (graph queries)
+    â†“ (graph queries)
 FalkorDB (Graph Database)
 ```
 
@@ -213,7 +225,8 @@ All memory is scoped to personalization - understanding who you are, what matter
 |----------|-------------|----------|---------|
 | `OPENAI_API_KEY` | Your OpenAI API key | Yes | - |
 | `OPENAI_REALTIME_MODEL` | Model to use for realtime conversations | Yes | `gpt-4o-realtime-preview-2024-12-17` |
-| `NEXT_PUBLIC_MCP_SERVER_URL` | URL for Graphiti MCP server | No | `http://localhost:8000/mcp` |
+| `NEXT_PUBLIC_MCP_SERVER_URL` | URL for Graphiti MCP server (no trailing slash) | No | `http://localhost:8000/mcp` |
+| `MCP_GROUP_ID` | Group/namespace for Graphiti memory; change to isolate user or environment | No | `eva-conversations` |
 
 ## Development
 

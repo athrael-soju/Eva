@@ -5,17 +5,23 @@ import { useLoadingAnimation } from '../hooks/useLoadingAnimation';
 interface LoadingAnimationProps {
   onAnimationComplete?: () => void;
   isAgentConnected?: boolean;
+  isAgentSpeaking?: boolean;
+  audioFrequencyData?: Uint8Array | null;
   shouldReset?: boolean;
 }
 
 export default function LoadingAnimation({
   onAnimationComplete,
   isAgentConnected,
+  isAgentSpeaking,
+  audioFrequencyData,
   shouldReset,
 }: LoadingAnimationProps) {
   const containerRef = useLoadingAnimation({
     onAnimationComplete,
     isAgentConnected,
+    isAgentSpeaking,
+    audioFrequencyData,
     shouldReset,
   });
 

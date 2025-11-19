@@ -5,12 +5,16 @@ import { CustomCurve } from '../components/three/CustomCurve';
 interface UseLoadingAnimationProps {
     onAnimationComplete?: () => void;
     isAgentConnected?: boolean;
+    isAgentSpeaking?: boolean;
+    audioFrequencyData?: Uint8Array | null;
     shouldReset?: boolean;
 }
 
 export const useLoadingAnimation = ({
     onAnimationComplete,
     isAgentConnected,
+    isAgentSpeaking,
+    audioFrequencyData,
     shouldReset,
 }: UseLoadingAnimationProps) => {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -19,13 +23,26 @@ export const useLoadingAnimation = ({
     const completionCallbackFiredRef = useRef(false);
     const animationStartedRef = useRef(false);
     const isAgentConnectedRef = useRef(false);
+    const isAgentSpeakingRef = useRef(false);
+    const audioDataRef = useRef<Uint8Array | null>(null);
     const animateStepRef = useRef(0);
     const isReversingRef = useRef(false);
+    const idleAnimationTimeRef = useRef(0);
 
     // Update ref when isAgentConnected changes
     useEffect(() => {
         isAgentConnectedRef.current = isAgentConnected || false;
     }, [isAgentConnected]);
+
+    // Update ref when isAgentSpeaking changes
+    useEffect(() => {
+        isAgentSpeakingRef.current = isAgentSpeaking || false;
+    }, [isAgentSpeaking]);
+
+    // Update audio data ref
+    useEffect(() => {
+        audioDataRef.current = audioFrequencyData || null;
+    }, [audioFrequencyData]);
 
     // Handle reset - trigger smooth reverse animation
     useEffect(() => {
@@ -182,7 +199,7 @@ export const useLoadingAnimation = ({
 
         // Render function
         const render = () => {
-            let progress;
+            let progress: number = 0;
 
             if (isReversingRef.current) {
                 const reverseSpeed = 2;
@@ -192,6 +209,7 @@ export const useLoadingAnimation = ({
                     isReversingRef.current = false;
                     completedRef.current = false;
                     completionCallbackFiredRef.current = false;
+                    idleAnimationTimeRef.current = 0;
                 }
             } else if (animationStartedRef.current) {
                 const maxStep = isAgentConnectedRef.current ? 240 : 120;
@@ -201,6 +219,8 @@ export const useLoadingAnimation = ({
 
             if (animateStepRef.current >= 240) {
                 completedRef.current = true;
+                // Increment idle animation time for spinning effect (negative for clockwise)
+                idleAnimationTimeRef.current -= 0.01;
             }
 
             acceleration = easing(animateStepRef.current, 0, 1, 240);
@@ -214,6 +234,11 @@ export const useLoadingAnimation = ({
                 (ringcover.material as THREE.MeshBasicMaterial).opacity = progress;
                 (ring.material as THREE.MeshBasicMaterial).opacity = progress;
                 ring.scale.x = ring.scale.y = 0.9 + 0.1 * progress;
+
+                // Spinning animation when completed (clockwise)
+                if (completedRef.current) {
+                    ring.rotation.z = idleAnimationTimeRef.current;
+                }
             } else {
                 group.rotation.y = 0;
                 group.position.z = 0;
