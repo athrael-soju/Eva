@@ -1,4 +1,4 @@
-# Eva - Your AI Companion
+# Eva - Your personalized Agentic Assistant
 
 <div align="center">
   <img src="public/eva-avatar.png" alt="Eva Avatar" width="85%" height="85%" />
