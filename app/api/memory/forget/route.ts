@@ -17,21 +17,25 @@ export async function POST(request: NextRequest) {
 
         console.log('[API] Deleting graph for group:', group_id);
 
-        // Execute GRAPH.DELETE command on FalkorDB
-        const command = `docker exec eva-graphiti-1 redis-cli -p 6379 GRAPH.DELETE ${group_id}`;
+        // Execute Cypher query to delete all nodes and relationships for this group in Neo4j
+        const cypherQuery = `MATCH (n) WHERE n.group_id = '${group_id}' DETACH DELETE n`;
+        const command = `docker exec eva-neo4j-1 cypher-shell -u neo4j -p demodemo --format plain "MATCH (n) WHERE n.group_id = '${group_id}' DETACH DELETE n"`;
         console.log('[API] Executing command:', command);
 
         const { stdout, stderr } = await execAsync(command);
 
-        if (stderr && !stderr.includes('OK')) {
+        if (stderr && !stderr.toLowerCase().includes('deleted')) {
             console.error('[API] Error deleting graph:', stderr);
-            return NextResponse.json(
-                { error: `Failed to delete graph: ${stderr}` },
-                { status: 500 }
-            );
+            // Note: Neo4j cypher-shell may output to stderr even on success, so we check for error indicators
+            if (stderr.toLowerCase().includes('error') || stderr.toLowerCase().includes('failed')) {
+                return NextResponse.json(
+                    { error: `Failed to delete graph: ${stderr}` },
+                    { status: 500 }
+                );
+            }
         }
 
-        console.log('[API] Successfully deleted graph:', stdout);
+        console.log('[API] Successfully deleted graph:', stdout, stderr);
 
         return NextResponse.json({
             success: true,

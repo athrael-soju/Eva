@@ -32,7 +32,7 @@ graph LR
 
     subgraph Docker Services
         G[Graphiti MCP Server]
-        H[FalkorDB]
+        H[Neo4j]
     end
 
     A --> B
@@ -206,7 +206,7 @@ sequenceDiagram
     participant API as API Route
     participant MCP as MCP Client
     participant Graphiti as Graphiti
-    participant DB as FalkorDB
+    participant DB as Neo4j
 
     U->>Agent: "Hi, I'm Bob"
     Agent->>Agent: Identify important info
@@ -251,7 +251,7 @@ sequenceDiagram
     participant API as API Route
     participant MCP as MCP Client
     participant Graphiti as Graphiti
-    participant DB as FalkorDB
+    participant DB as Neo4j
 
     U->>Agent: "What's my name?"
     Agent->>Agent: Recognize trigger phrase
@@ -303,7 +303,7 @@ graph TD
     M --> N
 
     N --> O[Graphiti Validates]
-    O --> P[FalkorDB Query]
+    O --> P[Neo4j Query]
 
     style C fill:#c8e6c9
     style I fill:#fff9c4
@@ -318,7 +318,7 @@ graph TD
 | **Ephemeral Tokens** | Short-lived, scoped | Generated per-session |
 | **MCP Client** | Server-side only | Runtime check for `window` |
 | **API Routes** | Validation & sanitization | Input validation on all endpoints |
-| **Graph Access** | No direct client access | MCP layer abstracts FalkorDB |
+| **Graph Access** | No direct client access | MCP layer abstracts Neo4j |
 | **Tool Execution** | Validated by OpenAI | JSON schema enforcement |
 
 ## Memory System
@@ -617,7 +617,7 @@ async callTool(name: string, args: any): Promise<any> {
 - [ ] Set up monitoring (Sentry, DataDog)
 - [ ] Enable HTTPS
 - [ ] Implement user sessions (multi-user support)
-- [ ] Add backup strategy for FalkorDB
+- [ ] Add backup strategy for Neo4j
 - [ ] Configure environment variables securely
 - [ ] Add analytics & telemetry
 
@@ -629,7 +629,7 @@ graph LR
         A[Browser] --> B[Next.js]
         B --> C[MCP Client]
         C --> D[Graphiti]
-        D --> E[FalkorDB]
+        D --> E[Neo4j]
     end
 
     subgraph "Production (Multi-User)"
@@ -638,7 +638,7 @@ graph LR
         H[Next.js Instance 2]
         I[Shared MCP Pool]
         J[Graphiti Cluster]
-        K[FalkorDB Cluster]
+        K[Neo4j Cluster]
 
         F --> G
         F --> H

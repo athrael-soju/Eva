@@ -9,7 +9,7 @@ Eva is a warm, intelligent AI companion with **episodic memory** powered by a kn
 ## 🌟 Key Features
 
 - **🎙️ Real-time Voice Conversations** - Natural, low-latency audio interactions using OpenAI Realtime API
-- **🧠 Episodic Memory** - Remembers conversations and personal details using Graphiti + FalkorDB knowledge graph
+- **🧠 Episodic Memory** - Remembers conversations and personal details using Graphiti + Neo4j knowledge graph
 - **💭 Natural Context Awareness** - Recalls information naturally, like a friend would remember
 - **🔒 Secure Architecture** - Server-side memory operations, client-side voice for optimal security and performance
 - **🎨 Clean, Modern UI** - Minimalist interface with visual feedback during conversations
@@ -34,7 +34,7 @@ graph TB
     subgraph "External Services"
         OpenAI[OpenAI Realtime API]
         Graphiti[Graphiti MCP Server]
-        FalkorDB[(FalkorDB Graph DB)]
+        Neo4j[(Neo4j Graph DB)]
     end
 
     UI -->|WebSocket| RT
@@ -42,14 +42,14 @@ graph TB
     RT -->|Tool Calls| API
     API -->|Memory Operations| MCP
     MCP <-->|JSON-RPC| Graphiti
-    Graphiti <-->|Cypher Queries| FalkorDB
+    Graphiti <-->|Cypher Queries| Neo4j
     UI -->|Get Token| Session
     Session -->|Generate| OpenAI
 
     style UI fill:#e1f5ff
     style API fill:#fff4e1
     style Graphiti fill:#e8f5e9
-    style FalkorDB fill:#f3e5f5
+    style Neo4j fill:#f3e5f5
 ```
 
 ## 🔄 Memory System Flow
@@ -62,15 +62,15 @@ sequenceDiagram
     participant API Routes
     participant MCP Client
     participant Graphiti
-    participant FalkorDB
+    participant Neo4j
 
-    Note over Eva,FalkorDB: Startup: Load Context
+    Note over Eva,Neo4j: Startup: Load Context
     Eva->>Browser: Call get_episodes tool
     Browser->>API Routes: POST /api/memory/get-episodes
     API Routes->>MCP Client: callTool('get_episodes')
     MCP Client->>Graphiti: JSON-RPC: get_episodes
-    Graphiti->>FalkorDB: MATCH episodes
-    FalkorDB-->>Graphiti: Episode nodes
+    Graphiti->>Neo4j: MATCH episodes
+    Neo4j-->>Graphiti: Episode nodes
     Graphiti-->>MCP Client: Episodes JSON
     MCP Client-->>API Routes: Result
     API Routes-->>Browser: Episodes
@@ -80,8 +80,8 @@ sequenceDiagram
     Browser->>API Routes: POST /api/memory/search-nodes
     API Routes->>MCP Client: callTool('search_nodes')
     MCP Client->>Graphiti: JSON-RPC: search_nodes
-    Graphiti->>FalkorDB: Vector search + MATCH
-    FalkorDB-->>Graphiti: Entity nodes
+    Graphiti->>Neo4j: Vector search + MATCH
+    Neo4j-->>Graphiti: Entity nodes
     Graphiti-->>MCP Client: Entities JSON
     MCP Client-->>API Routes: Result
     API Routes-->>Browser: Entities
@@ -93,8 +93,8 @@ sequenceDiagram
     Browser->>API Routes: POST /api/memory/add-episode
     API Routes->>MCP Client: callTool('add_memory')
     MCP Client->>Graphiti: JSON-RPC: add_memory
-    Graphiti->>FalkorDB: CREATE nodes + edges
-    FalkorDB-->>Graphiti: Success
+    Graphiti->>Neo4j: CREATE nodes + edges
+    Neo4j-->>Graphiti: Success
     Graphiti-->>MCP Client: Episode UUID
     MCP Client-->>API Routes: Result
     API Routes-->>Browser: Success
@@ -107,8 +107,8 @@ sequenceDiagram
     Browser->>API Routes: POST /api/memory/search-nodes
     API Routes->>MCP Client: callTool('search_nodes')
     MCP Client->>Graphiti: query="user name"
-    Graphiti->>FalkorDB: Vector search
-    FalkorDB-->>Graphiti: Bob entity
+    Graphiti->>Neo4j: Vector search
+    Neo4j-->>Graphiti: Bob entity
     Graphiti-->>Eva: "Bob" found
     Eva->>User: "Your name is Bob"
 ```
@@ -129,7 +129,7 @@ sequenceDiagram
 
 ### Memory & Data
 - **Graphiti** - Temporal knowledge graph for AI agents
-- **FalkorDB** - Graph database (Redis module)
+- **Neo4j** - Graph database
 - **Vector Embeddings** - Semantic search capabilities
 
 ## 📁 Project Structure
@@ -158,7 +158,7 @@ Eva/
 │   │   └── services/            # Service layer
 │   ├── components/              # React components
 │   └── page.tsx                 # Main application entry
-├── docker-compose.yml           # Graphiti + FalkorDB services
+├── docker-compose.yml           # Graphiti + Neo4j services
 └── next.config.ts              # Next.js configuration
 ```
 
@@ -192,7 +192,7 @@ Eva/
    MCP_SERVER_URL=http://localhost:8000/mcp
    ```
 
-4. **Start Graphiti & FalkorDB**
+4. **Start Graphiti & Neo4j**
    ```bash
    docker-compose up -d
    ```
@@ -390,7 +390,7 @@ docker-compose restart
 ```
 
 ### Memory Not Persisting
-- Check FalkorDB is running: `docker ps | grep falkordb`
+- Check Neo4j is running: `docker ps | grep neo4j`
 - Verify `group_id="user_default"` is used consistently
 - Check browser console for API errors
 
@@ -402,21 +402,25 @@ docker-compose restart
 ## 📊 Monitoring
 
 ### View Knowledge Graph
-FalkorDB Web UI: [http://localhost:3003](http://localhost:3003)
+Neo4j Browser: [http://localhost:7474](http://localhost:7474)
+
+**Default credentials:**
+- Username: `neo4j`
+- Password: `demodemo`
 
 **Query Examples:**
 ```cypher
 // View all nodes
 MATCH (n) RETURN n LIMIT 25
 
-// View user's graph
-GRAPH.QUERY user_default "MATCH (n) RETURN n LIMIT 50"
+// View nodes with specific group_id
+MATCH (n) WHERE n.group_id = 'user_default' RETURN n LIMIT 50
 
 // Find episodes
-GRAPH.QUERY user_default "MATCH (e:Episodic) RETURN e"
+MATCH (e:Episodic) WHERE e.group_id = 'user_default' RETURN e
 
 // Find relationships
-GRAPH.QUERY user_default "MATCH (a)-[r]->(b) RETURN a, r, b LIMIT 25"
+MATCH (a)-[r]->(b) WHERE a.group_id = 'user_default' RETURN a, r, b LIMIT 25
 ```
 
 ## 🤝 Contributing
@@ -435,7 +439,7 @@ Contributions are welcome! Please:
 
 - **OpenAI** - Realtime API & GPT-4o
 - **Graphiti** - Temporal knowledge graph framework
-- **FalkorDB** - High-performance graph database
+- **Neo4j** - Graph database platform
 - **Zep AI** - Knowledge graph MCP server
 
 ---

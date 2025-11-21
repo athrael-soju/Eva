@@ -1,16 +1,45 @@
 services:
-  graphiti:
-    image: zepai/knowledge-graph-mcp:latest
+  neo4j:
+    image: neo4j:5.26.0
     ports:
-      - "8000:8000" # MCP Server
-      - "6379:6379" # FalkorDB
-      - "3003:3000" # FalkorDB UI
-    env_file:
-      - .env.local
+      - "7474:7474" # Neo4j Browser
+      - "7687:7687" # Bolt protocol
+    environment:
+      - NEO4J_AUTH=neo4j/demodemo
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=1G
+      - NEO4J_server_memory_pagecache_size=512m
     volumes:
-      - ./data:/data
+      - neo4j_data:/data
+      - neo4j_logs:/logs
     networks:
       - eva-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  graphiti:
+    image: zepai/knowledge-graph-mcp:standalone
+    depends_on:
+      neo4j:
+        condition: service_healthy
+    ports:
+      - "8000:8000" # MCP Server
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=demodemo
+      - GRAPHITI_GROUP_ID=user_default
+      - SEMAPHORE_LIMIT=10
+    networks:
+      - eva-network
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
 
 networks:
   eva-network:
